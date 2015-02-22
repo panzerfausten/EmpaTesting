@@ -3,9 +3,12 @@ package com.example.panzer.empatesting;
 import android.bluetooth.BluetoothDevice;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
+import com.empatica.empalink.ConnectionNotAllowedException;
 import com.empatica.empalink.EmpaDeviceManager;
 import com.empatica.empalink.config.EmpaSensorStatus;
 import com.empatica.empalink.config.EmpaSensorType;
@@ -52,6 +55,7 @@ public class MainActivity extends ActionBarActivity implements EmpaDataDelegate,
 
     @Override
     public void didReceiveGSR(float v, double v2) {
+        Log.i("EMPATICADATA_GSR", String.valueOf(v) + ","+String.valueOf(v2));
 
     }
 
@@ -82,19 +86,40 @@ public class MainActivity extends ActionBarActivity implements EmpaDataDelegate,
 
     @Override
     public void didUpdateStatus(EmpaStatus empaStatus) {
+
+        Toast.makeText(getApplicationContext(),"DM STATUS: " + empaStatus.toString(),Toast.LENGTH_SHORT).show();
+
         if(empaStatus == EmpaStatus.READY){
-             
+             deviceManager.startScanning();
+
+            Toast.makeText(getApplicationContext(),"SCAN STARTED", Toast.LENGTH_LONG).show();
+
         }
     }
 
     @Override
     public void didUpdateSensorStatus(EmpaSensorStatus empaSensorStatus, EmpaSensorType empaSensorType) {
 
+
+
     }
 
     @Override
-    public void didDiscoverDevice(BluetoothDevice bluetoothDevice, int i, boolean b) {
+    public void didDiscoverDevice(BluetoothDevice device, int i, boolean allowed) {
+        // Stop scanning. The first allowed device will do.
+        if (allowed) {
+            deviceManager.stopScanning();
+            // Connect to the device
+            try {
+                deviceManager.connectDevice(device);
+                Toast.makeText(getApplicationContext(),"CONNECTED" , Toast.LENGTH_LONG).show();
 
+                // Depending on your configuration profile, you might be unable to connect to a device.
+                // This should happen only if you try to connect when allowed == false.
+            } catch (ConnectionNotAllowedException e) {
+                Toast.makeText(MainActivity.this, "Sorry, can't connect to this device", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     @Override
